@@ -4,7 +4,7 @@ import { Logger } from '@overnightjs/logger';
 import { Application } from 'express';
 import bodyParser from 'body-parser';
 import * as http from 'http';
-import { HelloController } from '@src/controllers/hello_controller';
+import { UsersController } from '@src/controllers/users_controller';
 
 export class SetupServer extends Server {
   private server?: http.Server;
@@ -23,10 +23,10 @@ export class SetupServer extends Server {
   }
 
   private setControllers() : void {
-    const helloController = new HelloController();
+    const usersController = new UsersController();
 
     this.addControllers([
-      helloController,
+      usersController,
     ])
   }
 
