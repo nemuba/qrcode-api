@@ -1,0 +1,12 @@
+{
+  "App": {
+    "port": 3000,
+    "database": {
+      "mysql": "mysql://root:admin@localhost:3306/qrcode_development"
+    },
+    "auth": {
+      "key": "@QERI",
+      "tokenExpiresIn": "20000000"
+    }
+  }
+}
