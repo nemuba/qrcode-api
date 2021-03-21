@@ -1,4 +1,5 @@
-import { Controller, Get, Post, ClassMiddleware, Middleware } from '@overnightjs/core';
+import { Controller, Get, Post, Middleware } from '@overnightjs/core';
+import { Logger } from '@overnightjs/logger';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '@src/prisma';
@@ -10,13 +11,15 @@ export class UsersController {
 
   @Get('')
   @Middleware(authMiddleware)
-  public async index(req: Request, res: Response): Promise<Response> {
+  public async index(_: Request, res: Response): Promise<Response> {
     const users = await prisma.users.findMany();
+
+    Logger.Info('GET user', true)
     return res.status(StatusCodes.OK).json(users);
   }
 
   @Post('')
-  public async create(req: Request, res: Response): Promise<void> {
+  public async create(req: Request, res: Response): Promise<Response> {
     try {
       const { name, email, password } = req.body;
       const hasPassword = await AuthService.hashPassword(password)
@@ -27,35 +30,38 @@ export class UsersController {
           password: hasPassword
         } as users ,
       });
-      
-      res.status(201).json(user);
+      Logger.Info('POST create user ', true);
+      return res.status(StatusCodes.CREATED).json(user);
     } catch (error) {
-      res.json({msg: error.message });
+      Logger.Err(error.message, true)
+      return res.json({msg: error.message });
     }
   }
 
   @Post('authenticate')
   public async authenticate(req: Request, res: Response): Promise<Response> {
-    const user = await prisma.users.findFirst({ where: { email: req.body.email } });
+    const { email } = req.body
+    const user = await prisma.users.findFirst({ where: { email: email } });
+
     if (!user) {
-      return res.json({
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         code: 401,
         message: 'User not found!',
         description: 'Try verifying your email address.',
       });
     }
-    if (
-      !(await AuthService.comparePasswords(req.body.password, user.password))
-    ) {
-      return res.json({
+
+    const comparePassword = await AuthService.comparePasswords(req.body.password, user.password)
+
+    if (!comparePassword) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
         code: 401,
         message: 'Password does not match!',
       });
     }
+
     const token = AuthService.generateToken(String(user.id));
 
     return res.json({ ...user, ...{ token } });
   }
-
-
 }
