@@ -14,7 +14,7 @@ export class UsersController {
   public async index(_: Request, res: Response): Promise<Response> {
     const users = await prisma.users.findMany();
 
-    Logger.Info('GET user', true)
+    Logger.Info('GET users', true)
     return res.status(StatusCodes.OK).json(users);
   }
 
@@ -44,6 +44,7 @@ export class UsersController {
     const user = await prisma.users.findFirst({ where: { email: email } });
 
     if (!user) {
+      Logger.Warn('GET users/authenticate user not found', true);
       return res.status(StatusCodes.UNAUTHORIZED).json({
         code: 401,
         message: 'User not found!',
@@ -54,6 +55,7 @@ export class UsersController {
     const comparePassword = await AuthService.comparePasswords(req.body.password, user.password)
 
     if (!comparePassword) {
+      Logger.Warn('GET users/authenticate user password does not match', true);
       return res.status(StatusCodes.UNAUTHORIZED).json({
         code: 401,
         message: 'Password does not match!',
@@ -62,6 +64,23 @@ export class UsersController {
 
     const token = AuthService.generateToken(String(user.id));
 
+    Logger.Info('GET users/authenticate', true);
     return res.json({ ...user, ...{ token } });
+  }
+
+  @Get('me')
+  @Middleware(authMiddleware)
+  public async me(req: Request, res: Response): Promise<Response> {
+    const userId = req.headers?.userId;
+    const user = await prisma.users.findFirst({ where: { id: Number(userId) } });
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        code: 404,
+        message: 'User not found!',
+      });
+    }
+
+    Logger.Info('GET users/me', true);
+    return res.send({ user });
   }
 }
