@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { prisma } from '@src/prisma';
 import AuthService from '@src/services/auth';
-import { users } from '@prisma/client'
+import { user as user_type } from '@prisma/client'
 import { authMiddleware } from '@src/middlewares/auth';
 @Controller('users')
 export class UsersController {
@@ -12,7 +12,7 @@ export class UsersController {
   @Get('')
   @Middleware(authMiddleware)
   public async index(_: Request, res: Response): Promise<Response> {
-    const users = await prisma.users.findMany();
+    const users = await prisma.user.findMany();
 
     Logger.Info('GET users', true)
     return res.status(StatusCodes.OK).json(users);
@@ -21,14 +21,13 @@ export class UsersController {
   @Post('')
   public async create(req: Request, res: Response): Promise<Response> {
     try {
-      const { name, email, password } = req.body;
+      const { email, password } = req.body;
       const hasPassword = await AuthService.hashPassword(password)
-      const user = await prisma.users.create({
+      const user = await prisma.user.create({
         data: {
-          name: name,
           email: email,
-          password: hasPassword
-        } as users ,
+          password_digest: hasPassword
+        } as user_type,
       });
       Logger.Info('POST create user ', true);
       return res.status(StatusCodes.CREATED).json(user);
@@ -41,7 +40,7 @@ export class UsersController {
   @Post('authenticate')
   public async authenticate(req: Request, res: Response): Promise<Response> {
     const { email } = req.body
-    const user = await prisma.users.findFirst({ where: { email: email } });
+    const user = await prisma.user.findFirst({ where: { email: email } });
 
     if (!user) {
       Logger.Warn('GET users/authenticate user not found', true);
@@ -72,7 +71,7 @@ export class UsersController {
   @Middleware(authMiddleware)
   public async me(req: Request, res: Response): Promise<Response> {
     const userId = req.headers?.userId;
-    const user = await prisma.users.findFirst({ where: { id: Number(userId) } });
+    const user = await prisma.user.findFirst({ where: { id: Number(userId) } });
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         code: 404,
