@@ -51,7 +51,7 @@ export class UsersController {
       });
     }
 
-    const comparePassword = await AuthService.comparePasswords(req.body.password, user.password)
+    const comparePassword = await AuthService.comparePasswords(req.body.password, user.password_digest)
 
     if (!comparePassword) {
       Logger.Warn('GET users/authenticate user password does not match', true);
