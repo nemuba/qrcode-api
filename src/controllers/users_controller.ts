@@ -6,8 +6,9 @@ import { prisma } from '@src/prisma';
 import AuthService from '@src/services/auth';
 import { user as user_type } from '@prisma/client'
 import { authMiddleware } from '@src/middlewares/auth';
+import { BaseController } from './index';
 @Controller('users')
-export class UsersController {
+export class UsersController extends BaseController {
 
   @Get('')
   @Middleware(authMiddleware)
@@ -70,8 +71,8 @@ export class UsersController {
   @Get('me')
   @Middleware(authMiddleware)
   public async me(req: Request, res: Response): Promise<Response> {
-    const userId = req.headers?.userId;
-    const user = await prisma.user.findFirst({ where: { id: Number(userId) } });
+    const user = await this.current_user(req);
+
     if (!user) {
       return res.status(StatusCodes.NOT_FOUND).json({
         code: 404,
