@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Middleware } from '@overnightjs/core';
+import { Controller, Get, Post, Put, Middleware } from '@overnightjs/core';
 import { Logger } from '@overnightjs/logger';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
@@ -13,7 +13,7 @@ export class UsersController extends BaseController {
   @Get('')
   @Middleware(authMiddleware)
   public async index(_: Request, res: Response): Promise<Response> {
-    const users = await prisma.user.findMany();
+    const users = await prisma.user.findMany({include: {profile: true, user_type: true}});
 
     Logger.Info('GET users', true)
     return res.status(StatusCodes.OK).json(users);
@@ -38,10 +38,37 @@ export class UsersController extends BaseController {
     }
   }
 
+  @Put(':id')
+  @Middleware(authMiddleware)
+  public async update(req: Request, res: Response): Promise<Response> {
+    const { id } = req.params;
+
+    try {
+      let user = await prisma.user.findFirst({ where: { id: Number(id)} })
+
+      if (!user) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          code: 404,
+          message: 'User not found!',
+        });
+      }
+
+      const user_data = req.body;
+
+      user = await prisma.user.update({ where: { id: user.id }, data: user_data, include: {user_type: true, profile: true}})
+
+      Logger.Info('PUT users/update', true);
+      return res.send({ user });
+    } catch (err) {
+      Logger.Info(err.message, true);
+      return res.send({ code: 422, message: err });
+    }
+  }
+
   @Post('authenticate')
   public async authenticate(req: Request, res: Response): Promise<Response> {
     const { email } = req.body
-    const user = await prisma.user.findFirst({ where: { email: email } });
+    const user = await prisma.user.findFirst({ where: { email: email }, include: { profile: true, user_type: true } });
 
     if (!user) {
       Logger.Warn('GET users/authenticate user not found', true);
