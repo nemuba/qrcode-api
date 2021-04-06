@@ -6,6 +6,7 @@ import bodyParser from 'body-parser';
 import * as http from 'http';
 import { UsersController } from '@src/controllers/users_controller';
 import { AuthController } from '@src/controllers/auth_controller';
+import { ProfileController } from '@src/controllers/profile_controller';
 
 export class SetupServer extends Server {
   private server?: http.Server;
@@ -26,10 +27,12 @@ export class SetupServer extends Server {
   private setControllers() : void {
     const usersController = new UsersController();
     const authController = new AuthController();
+    const profileController = new ProfileController();
 
     this.addControllers([
       usersController,
-      authController
+      authController,
+      profileController,
     ])
   }
 
